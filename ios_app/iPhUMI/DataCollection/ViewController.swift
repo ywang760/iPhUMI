@@ -299,6 +299,9 @@ class ViewController: UIViewController, ARSessionDelegate {
     var sessionIDObservation: NSKeyValueObservation?
     
     var configuration: ARWorldTrackingConfiguration?
+
+    // Live ARKit pose stream to a computer over USB (see PoseStreamer.swift).
+    let poseStreamer = PoseStreamer()
     
     var prevTimestampThisDevice: Double = 0.0
     var previousRecordingPoseTransform: simd_float4x4? = nil
@@ -555,6 +558,8 @@ class ViewController: UIViewController, ARSessionDelegate {
 
         // Begin the session.
         session.run(configuration!)
+        poseStreamer.bumpEpoch()
+        poseStreamer.start()
 
         // Start speech recognizer after ARKit has claimed the audio session
         if speechRecognizerEnabled && liveSpeechRecognizer == nil && !micCurrentlyConnected {
@@ -604,6 +609,7 @@ class ViewController: UIViewController, ARSessionDelegate {
         multipeerSession = nil
         peerSessionIDs.removeAll()
         session.pause()
+        poseStreamer.stop()
         UIApplication.shared.isIdleTimerDisabled = false
     }
     
@@ -1762,6 +1768,7 @@ class ViewController: UIViewController, ARSessionDelegate {
     
     // ARSessionDelegate method
     func session(_ session: ARSession, didUpdate frame: ARFrame) {
+        poseStreamer.send(frame: frame)
         setRecordingMode(mode: self.recordingMode) // refresh recording state
         
         if mainIntrinsincs == nil {
@@ -2522,6 +2529,7 @@ class ViewController: UIViewController, ARSessionDelegate {
         
         print("Resetting tracking")
         session.run(configuration!, options: [.resetTracking, .removeExistingAnchors])
+        poseStreamer.bumpEpoch()
         
 //        multipeerSession = MultipeerSession(receivedDataHandler: receivedData, peerJoinedHandler:
 //                                            peerJoined, peerLeftHandler: peerLeft, peerDiscoveredHandler: peerDiscovered)
