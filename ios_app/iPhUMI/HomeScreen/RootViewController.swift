@@ -25,7 +25,9 @@ class RootViewController: UIViewController {
         if appMode == "demonstration" {
             collectDemonstration()
         } else if appMode == "deployment" {
-            startDeployment()
+            // Don't reopen deployment at launch: on iPhones it cannot set up (e.g. no LiDAR) it
+            // crashes, and resuming it would crash every launch. The home screen shows instead.
+            defaults.removeObject(forKey: "appMode")
         }
     }
     
